@@ -1,0 +1,87 @@
+/* Global reset */
+* {
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Page center */
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f6f8;
+}
+
+/* Card */
+.card {
+  width: 350px;
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Heading */
+.card h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Inputs */
+.card input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+.card input:focus {
+  border-color: #4f46e5;
+}
+
+/* Buttons */
+.card button {
+  width: 100%;
+  padding: 10px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.card button:hover {
+  background: #4338ca;
+}
+
+/* Switch text */
+.switch-text {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.switch-text button {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Task section */
+.tasks {
+  margin-top: 20px;
+}
+
+.tasks ul {
+  padding-left: 18px;
+}
+
+.tasks li {
+  margin-bottom: 6px;
+}

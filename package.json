@@ -1,0 +1,23 @@
+{
+  "name": "react-monorepo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+ "scripts": {
+  "web": "pnpm --filter web dev",
+  "mobile": "pnpm --filter mobile start",
+  "dev": "concurrently \"pnpm web\" \"pnpm mobile\""
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.18.3",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "eslint": "^9.39.2",
+    "prettier": "^3.8.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.90.1"
+  }
+}
