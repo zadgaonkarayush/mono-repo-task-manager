@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import "../styles/auth.css";
-
+import {fetchTasks,addTask } from "../../../../packages/core/src/task.ts";
 const TaskManager = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [title, setTitle] = useState("");
 
   const load = async () => {
-    const { data } = await supabase.from("tasks").select("*");
+    const  data = await fetchTasks(supabase);
     setTasks(data || []);
   };
 
   const add = async () => {
     if (!title) return;
-    await supabase.from("tasks").insert({ title });
+    await addTask(supabase,title)
     setTitle("");
     load();
   };

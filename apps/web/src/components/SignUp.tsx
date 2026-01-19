@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../supabase";
 import "../styles/auth.css";
-
+import { signUp as Add} from "../../../../packages/core/src/auth.ts";
 type Props = {
   onSwitch: () => void;
 };
@@ -11,10 +11,7 @@ const SignUp = ({ onSwitch }: Props) => {
   const [password, setPassword] = useState("");
 
   const signUp = async () => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { error } = await Add(supabase, email, password);
     if (error) alert(error.message);
     else alert("Signup successful! You can login now.");
   };

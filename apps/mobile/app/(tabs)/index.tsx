@@ -1,162 +1,179 @@
+import { Image } from 'expo-image';
 
+import { HelloWave } from '@/components/hello-wave';
+import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Link } from 'expo-router';
 
-import { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TextInput,
-  Button,
-  FlatList,
-  TouchableOpacity,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState, useEffect } from 'react';
+import { View, TextInput, Button, FlatList, Alert, StyleSheet,Text } from 'react-native';
 import { supabase } from '@/supabase';
 
+import { signIn,signUp,signOut } from '@repo/core';
 export default function HomeScreen() {
-  const [session, setSession] = useState<any>(null);
+   const [session, setSession] = useState<any>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Tasks state
   const [tasks, setTasks] = useState<any[]>([]);
   const [title, setTitle] = useState('');
+    useEffect(() => {
+    // Get current session
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session) loadTasks();
+    // Listen for auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) loadTasks();
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      if (s) loadTasks();
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  const loadTasks = async () => {
-    const { data } = await supabase.from('tasks').select('*').order('id');
+
+    const loadTasks = async () => {
+    const { data } = await supabase.from('tasks').select('*');
     setTasks(data || []);
   };
 
   const addTask = async () => {
-    if (!title.trim()) return;
+    if (!title) return;
     await supabase.from('tasks').insert({ title });
     setTitle('');
     loadTasks();
   };
 
-  /* ---------- LOGIN UI ---------- */
-  if (!session) {
+    const handleSignIn = async () => {
+    const { error } = await signIn(supabase, email, password);
+    if (error) Alert.alert('Error', error.message);
+  };
+
+  const handleSignUp = async () => {
+    const { error } = await signUp(supabase, email, password);
+    if (error) Alert.alert('Error', error.message);
+    else Alert.alert('Success', 'Signup successful! You can login now.');
+  };
+
+  const handleSignOut = async () => {
+    await signOut(supabase);
+  };
+
+    if (!session) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.heading}>📱 Mobile Login</Text>
+      <View style={styles.page}>
+        <Text style={styles.heading}>Login / Signup</Text>
 
         <TextInput
-          style={styles.input}
           placeholder="Email"
           value={email}
           onChangeText={setEmail}
-          autoCapitalize="none"
-        />
-
-        <TextInput
           style={styles.input}
+        />
+        <TextInput
           placeholder="Password"
-          secureTextEntry
           value={password}
+          secureTextEntry
           onChangeText={setPassword}
+          style={styles.input}
         />
 
-        <View style={styles.buttonGroup}>
-          <Button
-            title="Login"
-            onPress={() =>
-              supabase.auth.signInWithPassword({ email, password })
-            }
-          />
-          <View style={{ height: 10 }} />
-          <Button
-            title="Signup"
-            onPress={() => supabase.auth.signUp({ email, password })}
-          />
-        </View>
-      </SafeAreaView>
+        <Button title="Login" onPress={handleSignIn} />
+        <Button title="Signup" onPress={handleSignUp} />
+      </View>
     );
   }
 
-  /* ---------- TASK UI ---------- */
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.heading}>✅ Task Manager</Text>
-        <Button title="Logout" onPress={() => supabase.auth.signOut()} />
+   return (
+    <ParallaxScrollView
+      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      headerImage={
+        <Image
+          source={require('@/assets/images/partial-react-logo.png')}
+          style={styles.reactLogo}
+        />
+      }
+    >
+      {/* Welcome + Logout */}
+      <View style={{ padding: 16 }}>
+        <Text>Welcome {session.user.email}</Text>
+        <Button title="Logout" onPress={handleSignOut} />
       </View>
 
-      <View style={styles.addTaskBox}>
+      {/* Task Manager */}
+      <View style={styles.taskContainer}>
+        <Text style={styles.heading}>Tasks</Text>
         <TextInput
-          style={styles.input}
-          placeholder="Enter task"
+          placeholder="New Task"
           value={title}
           onChangeText={setTitle}
+          style={styles.input}
         />
         <Button title="Add Task" onPress={addTask} />
+        <FlatList
+          data={tasks}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <Text style={styles.taskItem}>{item.title}</Text>}
+        />
       </View>
 
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ marginTop: 20 }}
-        renderItem={({ item }) => (
-          <View style={styles.taskCard}>
-            <Text style={styles.taskText}>{item.title}</Text>
-          </View>
-        )}
-      />
-    </SafeAreaView>
+      {/* Existing HomeScreen content */}
+      <ThemedView style={styles.titleContainer}>
+        <ThemedText type="title">Welcome!</ThemedText>
+        <HelloWave />
+      </ThemedView>
+      {/* ... rest of your existing steps */}
+    </ParallaxScrollView>
   );
+
 }
 const styles = StyleSheet.create({
-  container: {
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  titleContainerChild: {
+    marginRight: 8,
+  },
+  stepContainer: {
+    marginBottom: 8,
+  },
+  reactLogo: {
+    height: 178,
+    width: 290,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+  },
+  page: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#F4F6F8',
+    padding: 16,
+    backgroundColor: '#fff',
   },
   heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 15,
-    backgroundColor: '#fff',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+        backgroundColor: '#fff',
+
   },
-  buttonGroup: {
-    marginTop: 10,
+  taskContainer: {
+    padding: 16,
+        backgroundColor: '#fff',
+
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  addTaskBox: {
-    marginTop: 20,
-  },
-  taskCard: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    elevation: 2,
-  },
-  taskText: {
-    fontSize: 16,
+  taskItem: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
 });
