@@ -3,7 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-native",
-    "moduleResolution": "nodenext",  // <-- change here
+    "module": "NodeNext",               // required for nodenext resolution
+    "moduleResolution": "NodeNext",
     "target": "esnext",
     "lib": ["dom", "esnext"],
     "allowJs": true,

@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 import { View, TextInput, Button, FlatList, Alert, StyleSheet,Text } from 'react-native';
 import { supabase } from '@/supabase';
 
-import { signIn,signUp,signOut } from '@repo/core';
+import { signIn,signUp,signOut, fetchTasks, addTask as Add } from '@repo/core';
 export default function HomeScreen() {
    const [session, setSession] = useState<any>(null);
   const [email, setEmail] = useState('');
@@ -34,13 +34,13 @@ export default function HomeScreen() {
 
 
     const loadTasks = async () => {
-    const { data } = await supabase.from('tasks').select('*');
+    const  data  = await fetchTasks(supabase);
     setTasks(data || []);
   };
 
   const addTask = async () => {
     if (!title) return;
-    await supabase.from('tasks').insert({ title });
+    await Add(supabase, title);
     setTitle('');
     loadTasks();
   };
