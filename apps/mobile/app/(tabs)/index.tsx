@@ -1,51 +1,58 @@
-import { Image } from 'expo-image';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
-
 import { useState, useEffect } from 'react';
-import { View, TextInput, Button, FlatList, Alert, StyleSheet,Text } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  FlatList,
+  Alert,
+  StyleSheet,
+  SafeAreaView,
+} from 'react-native';
 import { supabase } from '@/supabase';
+import { signIn, signUp, signOut, fetchTasks, addTask as Add } from '@repo/core';
 
-import { signIn,signUp,signOut, fetchTasks, addTask as Add } from '@repo/core';
+/* 🎨 COLORS */
+const PRIMARY = '#4F46E5';
+const ACCENT = '#F97316';
+const SUCCESS = '#22C55E';
+const BG = '#F1F5F9';
+const CARD = '#bce542';
+const MUTED = '#64748B';
+
 export default function HomeScreen() {
-   const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<any>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // Tasks state
   const [tasks, setTasks] = useState<any[]>([]);
   const [title, setTitle] = useState('');
-    useEffect(() => {
-    // Get current session
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
 
-    // Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) loadTasks();
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        if (session) loadTasks();
+      }
+    );
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
-
-    const loadTasks = async () => {
-    const  data  = await fetchTasks(supabase);
+  const loadTasks = async () => {
+    const data = await fetchTasks(supabase);
     setTasks(data || []);
   };
 
   const addTask = async () => {
-    if (!title) return;
+    if (!title.trim()) return;
     await Add(supabase, title);
     setTitle('');
     loadTasks();
   };
 
-    const handleSignIn = async () => {
+  const handleSignIn = async () => {
     const { error } = await signIn(supabase, email, password);
     if (error) Alert.alert('Error', error.message);
   };
@@ -53,17 +60,14 @@ export default function HomeScreen() {
   const handleSignUp = async () => {
     const { error } = await signUp(supabase, email, password);
     if (error) Alert.alert('Error', error.message);
-    else Alert.alert('Success', 'Signup successful! You can login now.');
   };
 
-  const handleSignOut = async () => {
-    await signOut(supabase);
-  };
-
-    if (!session) {
+  /* ---------- AUTH SCREEN ---------- */
+  if (!session) {
     return (
-      <View style={styles.page}>
-        <Text style={styles.heading}>Login / Signup</Text>
+      <SafeAreaView style={styles.authContainer}>
+        <Text style={styles.appTitle}>Task Manager</Text>
+        <Text style={styles.subTitle}>Login or create an account</Text>
 
         <TextInput
           placeholder="Email"
@@ -79,101 +83,159 @@ export default function HomeScreen() {
           style={styles.input}
         />
 
-        <Button title="Login" onPress={handleSignIn} />
-        <Button title="Signup" onPress={handleSignUp} />
-      </View>
+        <View style={styles.primaryButton}>
+          <Button title="Sign Up" color="#fff" onPress={handleSignUp} />
+        </View>
+
+        <View style={styles.secondaryButton}>
+          <Button title="Login" color={PRIMARY} onPress={handleSignIn} />
+        </View>
+      </SafeAreaView>
     );
   }
 
-   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      {/* Welcome + Logout */}
-      <View style={{ padding: 16 }}>
-        <Text>Welcome {session.user.email}</Text>
-        <Button title="Logout" onPress={handleSignOut} />
+  /* ---------- MAIN APP ---------- */
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* 🔝 HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Tasks</Text>
+        <Button title="Logout" color={ACCENT} onPress={() => signOut(supabase)} />
       </View>
 
-      {/* Task Manager */}
-      <View style={styles.taskContainer}>
-        <Text style={styles.heading}>Tasks</Text>
+      {/* ➕ ADD TASK */}
+      <View style={styles.addCard}>
         <TextInput
-          placeholder="New Task"
+          placeholder="Enter new task"
           value={title}
           onChangeText={setTitle}
-          style={styles.input}
+          style={styles.taskInput}
         />
-        <Button title="Add Task" onPress={addTask} />
-        <FlatList
-          data={tasks}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <Text style={styles.taskItem}>{item.title}</Text>}
-        />
+        <View style={styles.addButton}>
+          <Button title="Add" color="#0c0606" onPress={addTask} />
+        </View>
       </View>
 
-      {/* Existing HomeScreen content */}
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      {/* ... rest of your existing steps */}
-    </ParallaxScrollView>
+      {/* 📜 TASK LIST (SCROLLABLE) */}
+      <FlatList
+        data={tasks}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <View style={styles.taskItem}>
+            <Text style={styles.taskText}>{item.title}</Text>
+          </View>
+        )}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No tasks yet 🚀</Text>
+        }
+      />
+    </SafeAreaView>
   );
-
 }
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  titleContainerChild: {
-    marginRight: 8,
-  },
-  stepContainer: {
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-  page: {
+  container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: BG,
+    marginTop:25
   },
-  heading: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 12,
+
+  /* AUTH */
+  authContainer: {
+    flex: 1,
+    backgroundColor: BG,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  appTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    textAlign: 'center',
+    color: PRIMARY,
+  },
+  subTitle: {
+    textAlign: 'center',
+    color: MUTED,
+    marginBottom: 28,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
-        backgroundColor: '#fff',
-
-  },
-  taskContainer: {
+    backgroundColor: CARD,
+    borderRadius: 14,
     padding: 16,
-        backgroundColor: '#fff',
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  primaryButton: {
+    backgroundColor: ACCENT,
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  secondaryButton: {
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: PRIMARY,
+    overflow: 'hidden',
+  },
 
+  /* HEADER */
+  header: {
+    padding: 16,
+    backgroundColor: CARD,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    elevation: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+
+  /* ADD TASK */
+  addCard: {
+    backgroundColor: CARD,
+    margin: 16,
+    padding: 14,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 3,
+  },
+  taskInput: {
+    flex: 1,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    marginRight: 10,
+  },
+  addButton: {
+    backgroundColor: PRIMARY,
+    borderRadius: 26,
+    // overflow: 'hidden',
+  },
+
+  /* LIST */
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 55
   },
   taskItem: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    backgroundColor: CARD,
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: SUCCESS,
+  },
+  taskText: {
+    fontSize: 15,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: MUTED,
+    marginTop: 40,
   },
 });
